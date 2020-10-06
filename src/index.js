@@ -1,23 +1,45 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+
 import './index.css';
 
 import App from './App';
 
 import rootReducer from './store/reducers/rootReducer';
+import firebaseConfig from './config/firebaseConfig';
+import firebase from 'firebase/app'
 
 import { BrowserRouter } from 'react-router-dom';
-import { createStore, applyMiddleware } from 'redux';
+import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import thunk from 'redux-thunk';
+import { getFirestore, reduxFirestore, createFirestoreInstance } from 'redux-firestore';
+import { getFirebase, ReactReduxFirebaseProvider } from 'react-redux-firebase';
 
-const store = createStore(rootReducer, applyMiddleware(thunk)); // Store enhancer
+
+// We can combine several store enhancers using compose()
+const store = createStore(
+  rootReducer,
+  compose(
+    applyMiddleware(thunk.withExtraArgument({getFirebase, getFirestore})),
+    reduxFirestore(firebaseConfig) // redux bindings for firestore
+  )
+); // Store enhancer
+
+const rrfProps = {
+  firebase,
+  config: firebaseConfig,
+  dispatch: store.dispatch,
+  createFirestoreInstance
+};
 
 ReactDOM.render(
   <Provider store={store}>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <ReactReduxFirebaseProvider {...rrfProps}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </ReactReduxFirebaseProvider>
   </Provider>,
   document.getElementById('root')
 );
